@@ -13,7 +13,7 @@ bot = commands.Bot(command_prefix='!')
 
 # List of global variables w/ default values
 wrg = None
-
+book = None
 # Called when 'client is done preparing the data received from discord
 # Usually after login is successful and the Client.guilds are filled up'
 @bot.event
@@ -62,6 +62,35 @@ async def deleteWRG(ctx):
     wrg = None
 
     await ctx.send('Removed Weekly Reading Goal')
+
+# '!setBook' command
+@bot.command(name='setBook', help='SET Book that will be read')
+async def setBook(ctx, currBook: str):
+    # Overwrite 'book' global variable
+    global book
+    book = currBook
+
+    # Send confirmation message to discord
+    await ctx.send('Book set to \'{}\''.format(currBook))
+
+
+# '!getBook' command
+@bot.command(name='getBook', help='GET Book that is currently being read')
+async def getBook(ctx):
+    if book is None:
+        await ctx.send('Book has not been set')
+    else:
+        await ctx.send('Book Club is currently reading: \'{}\''.format(book))
+
+
+# '!deleteBook' command
+@bot.command(name='deleteBook', help='DELETE Book')
+async def deleteBook(ctx):
+    # Overwrite 'book' global variable
+    global book
+    book = None
+
+    await ctx.send('Removed Book')
 
 # Run the Client
 bot.run(TOKEN)
