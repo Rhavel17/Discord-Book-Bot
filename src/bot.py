@@ -14,11 +14,15 @@ bot = commands.Bot(command_prefix='!')
 # List of global variables w/ default values
 wrg = None
 book = None
+meeting = None
+
+
 # Called when 'client is done preparing the data received from discord
 # Usually after login is successful and the Client.guilds are filled up'
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user.name}')
+
 
 # Exception Handling for the bot
 @bot.event
@@ -30,7 +34,8 @@ async def on_command_error(ctx, err):
     if isinstance(err, commands.MissingRequiredArgument):
         return await ctx.send('Cannot grant your request. Missing a parameter for \'{}\'.'.format(ctx.command.name))
     elif isinstance(err, commands.ArgumentParsingError):
-        return await ctx.send('Cannot grant your request. Unable to parse your input for {}.'.format(ctx.command.name))
+        return await ctx.send('Cannot grant your request.\
+         Unable to parse your input for {}.'.format(ctx.command.name))
     elif isinstance(err, commands.BadArgument):
         return await ctx.send('Cannot grant your request. Parsing or conversion failure on command argument(s) for {}.'.format(ctx.command.name))
     elif isinstance(err, commands.NoPrivateMessage):
@@ -129,6 +134,36 @@ async def deleteBook(ctx):
     book = None
 
     await ctx.send('Removed Book')
+
+
+# '!getMeetTime' command
+@bot.command(name="setMeetTime", help='SET Meeting Time for book club')
+async def setMeetTime(ctx, *args):
+    # Overwrite 'meeting' global variables
+    global meeting
+    meeting = ' '.join(args)
+
+    await ctx.send('Meeting Time has been set to: \'{}\''.format(meeting))
+
+
+# '!getMeetTime' command
+@bot.command(name='getMeetTime', help='GET Meeting Time for book club')
+async def getMeetTime(ctx):
+    if meeting is None:
+        await ctx.send('Meeting Time has not been set')
+    else:
+        await ctx.send('The Meeting Time for the book club is \'{}\''.format(meeting))
+
+
+# '!deleteMeetTime' command
+@bot.command(name='deleteMeetTime', help='DELETE Meeting Time for book club')
+async def deleteMeetTime(ctx):
+    # Overwrite 'meeting' global variable
+    global meeting
+    meeting = None
+
+    await ctx.send('Removed Meeting Time')
+
 
 # Run the Client
 bot.run(TOKEN)
