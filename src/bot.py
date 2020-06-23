@@ -66,20 +66,20 @@ async def test(ctx, *args):
 
 # '!shutdown' command
 @bot.command(name='shutdown', help='Turns the bot off')
-async def shutdown(ctx, *args):
+async def shutdown(ctx):
     await ctx.send('Shutting down Discord Book Bot')
     exit()
 
 
 # '!setWRG' command
 @bot.command(name='setWRG', help='SET Weekly Reading Goal')
-async def setWRG(ctx, goal: str):
+async def setWRG(ctx, *args):
     # Overwrite 'wrg' global variable
     global wrg
-    wrg = goal
+    wrg = ' '.join(args)
 
     # Send confirmation message to discord
-    await ctx.send('Weekly Reading Goal set to \'{}\''.format(goal))
+    await ctx.send('Weekly Reading Goal set to \'{}\''.format(wrg))
 
 
 # '!getWRG' command
@@ -100,15 +100,16 @@ async def deleteWRG(ctx):
 
     await ctx.send('Removed Weekly Reading Goal')
 
+
 # '!setBook' command
 @bot.command(name='setBook', help='SET Book that will be read')
-async def setBook(ctx, currBook: str):
+async def setBook(ctx, *args):
     # Overwrite 'book' global variable
     global book
-    book = currBook
+    book = ' '.join(args)
 
     # Send confirmation message to discord
-    await ctx.send('Book set to \'{}\''.format(currBook))
+    await ctx.send('Book set to \'{}\''.format(book))
 
 
 # '!getBook' command
