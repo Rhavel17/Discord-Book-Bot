@@ -1,12 +1,63 @@
 import os
+import pycurl
+import xml.etree.ElementTree as ET
 from dotenv import load_dotenv
 from discord.ext import commands
+from io import BytesIO
+
 
 # Load environment variable(s) from .env file to shell's environment variables
 load_dotenv()
 
-# Get the value of the 'DISCORD_TOKEN' env variable
-TOKEN = os.getenv('DISCORD_TOKEN')
+# Retreive the API keys stored in the .env file
+DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+GOODREADS_TOKEN = os.getenv('GOODREADS_TOKEN')
+
+''' GoodReads API Setup'''
+c = pycurl.Curl()
+book_url = 'https://www.goodreads.com/book/title.xml?title={}&key={}'
+
+c.setopt(c.SSL_VERIFYPEER, 0)
+
+'''GoodReads Functions'''
+
+# Get the author of a specified book
+def author(book):
+    if book is None:
+        return None
+    elif not book:
+        return ""
+    else:
+        book_title = book.strip().replace(" ", "+")
+
+    buffer = BytesIO()
+
+    # Input the URL for the cURL request
+    c.setopt(c.URL, book_url.format(book_title, GOODREADS_TOKEN))
+    # Input the variable that will store the outputted data
+    c.setopt(c.WRITEDATA, buffer)
+    # Perform the cURL request
+    c.perform()
+
+    # Convert the BytesIO value into a string
+    response = buffer.getvalue().decode('utf8')
+
+    # Store the xml, in string format, as an ElementTree
+    elem = ET.fromstring(response)
+
+    auth = elem.find('book').find('authors').find('author').find('name').text
+    title = elem.find('book').find('title').text
+
+    c.reset()
+    c.setopt(c.SSL_VERIFYPEER, 0)
+
+    return (title, auth)
+
+
+
+
+
+'''Discord Functionality'''
 
 # Create instance of Bot
 bot = commands.Bot(command_prefix='!')
@@ -73,12 +124,13 @@ async def test(ctx, *args):
 @bot.command(name='shutdown', help='Turns the bot off')
 async def shutdown(ctx):
     await ctx.send('Shutting down Discord Book Bot')
+    c.close()
     exit()
 
 
 # '!setWRG' command
-@bot.command(name='setWRG', help='SET Weekly Reading Goal')
-async def setWRG(ctx, *args):
+@bot.command(name='set_wrg', help='SET Weekly Reading Goal')
+async def set_wrg(ctx, *args):
     # Overwrite 'wrg' global variable
     global wrg
     wrg = ' '.join(args)
@@ -88,8 +140,8 @@ async def setWRG(ctx, *args):
 
 
 # '!getWRG' command
-@bot.command(name='getWRG', help='GET Weekly Reading Goal')
-async def getWRG(ctx):
+@bot.command(name='get_wrg', help='GET Weekly Reading Goal')
+async def get_wrg(ctx):
     if wrg is None:
         await ctx.send('Weekly Reading Goal has not been set')
     else:
@@ -97,8 +149,8 @@ async def getWRG(ctx):
 
 
 # '!deleteWRG' command
-@bot.command(name='deleteWRG', help='DELETE Weekly Reading Goal')
-async def deleteWRG(ctx):
+@bot.command(name='delete_wrg', help='DELETE Weekly Reading Goal')
+async def delete_wrg(ctx):
     # Overwrite 'wrg' global variable
     global wrg
     wrg = None
@@ -107,8 +159,8 @@ async def deleteWRG(ctx):
 
 
 # '!setBook' command
-@bot.command(name='setBook', help='SET Book that will be read')
-async def setBook(ctx, *args):
+@bot.command(name='set_book', help='SET Book that will be read')
+async def set_book(ctx, *args):
     # Overwrite 'book' global variable
     global book
     book = ' '.join(args)
@@ -118,8 +170,8 @@ async def setBook(ctx, *args):
 
 
 # '!getBook' command
-@bot.command(name='getBook', help='GET Book that is currently being read')
-async def getBook(ctx):
+@bot.command(name='get_book', help='GET Book that is currently being read')
+async def get_book(ctx):
     if book is None:
         await ctx.send('Book has not been set')
     else:
@@ -127,8 +179,8 @@ async def getBook(ctx):
 
 
 # '!deleteBook' command
-@bot.command(name='deleteBook', help='DELETE Book')
-async def deleteBook(ctx):
+@bot.command(name='delete_book', help='DELETE Book')
+async def delete_book(ctx):
     # Overwrite 'book' global variable
     global book
     book = None
@@ -137,8 +189,8 @@ async def deleteBook(ctx):
 
 
 # '!getMeetTime' command
-@bot.command(name="setMeetTime", help='SET Meeting Time for book club')
-async def setMeetTime(ctx, *args):
+@bot.command(name="set_meeting", help='SET Meeting Time for book club')
+async def set_meeting(ctx, *args):
     # Overwrite 'meeting' global variables
     global meeting
     meeting = ' '.join(args)
@@ -147,8 +199,8 @@ async def setMeetTime(ctx, *args):
 
 
 # '!getMeetTime' command
-@bot.command(name='getMeetTime', help='GET Meeting Time for book club')
-async def getMeetTime(ctx):
+@bot.command(name='get_meeting', help='GET Meeting Time for book club')
+async def get_meeting(ctx):
     if meeting is None:
         await ctx.send('Meeting Time has not been set')
     else:
@@ -156,14 +208,20 @@ async def getMeetTime(ctx):
 
 
 # '!deleteMeetTime' command
-@bot.command(name='deleteMeetTime', help='DELETE Meeting Time for book club')
-async def deleteMeetTime(ctx):
+@bot.command(name='delete_meeting', help='DELETE Meeting Time for book club')
+async def delete_meeting(ctx):
     # Overwrite 'meeting' global variable
     global meeting
     meeting = None
 
     await ctx.send('Removed Meeting Time')
 
+# '!get_author' command
+@bot.command(name='get_author', help='Get author from a specified book')
+async def get_author(ctx, book):
+    book_author = author(book)
+
+    await ctx.send('The author of \"{}\" is {}'.format(book_author[0], book_author[1]))
 
 # Run the Client
-bot.run(TOKEN)
+bot.run(DISCORD_TOKEN)
