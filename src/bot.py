@@ -21,6 +21,7 @@ c.setopt(c.SSL_VERIFYPEER, 0)
 
 '''GoodReads Functions'''
 
+
 # Get the author of a specified book
 def author(book):
     if book is None:
@@ -45,6 +46,7 @@ def author(book):
     # Store the xml, in string format, as an ElementTree
     elem = ET.fromstring(response)
 
+    # Retreive the author and title from the ElementTree
     auth = elem.find('book').find('authors').find('author').find('name').text
     title = elem.find('book').find('title').text
 
@@ -54,7 +56,151 @@ def author(book):
     return (title, auth)
 
 
+# Get the description of a specified book
+def description(book):
+    if book is None:
+        return None
+    elif not book:
+        return ""
+    else:
+        book_title = book.strip().replace(" ", "+")
 
+    buffer = BytesIO()
+
+    # Input the URL for the cURL request
+    c.setopt(c.URL, book_url.format(book_title, GOODREADS_TOKEN))
+    # Input the variable that will store the outputted data
+    c.setopt(c.WRITEDATA, buffer)
+    # Perform the cURL request
+    c.perform()
+
+    # Convert the BytesIO value into a string
+    response = buffer.getvalue().decode('utf8')
+
+    # Store the xml, in string format, as an ElementTree
+    elem = ET.fromstring(response)
+
+    # Retrieve the description and the title from the ElementTree
+    descript = elem.find('book').find('description').text
+    title = elem.find('book').find('title').text
+
+    # Remove any unwanted substrings in the description
+    descript = descript.replace("<br />", "")
+    descript = descript.replace("<i>", "")
+    descript = descript.replace("</i>", "")
+    descript = descript.replace("<p>", "")
+    descript = descript.replace("</p>", "")
+    descript = descript.replace("<b>", "")
+    descript = descript.replace("</b>", "")
+    descript = descript.replace("(back cover)", "")
+
+    c.reset()
+    c.setopt(c.SSL_VERIFYPEER, 0)
+
+    return (title, descript)
+
+
+# Get the book's page count
+def page_count(book):
+    if book is None:
+        return None
+    elif not book:
+        return ""
+    else:
+        book_title = book.strip().replace(" ", "+")
+
+    buffer = BytesIO()
+
+    # Input the URL for the cURL request
+    c.setopt(c.URL, book_url.format(book_title, GOODREADS_TOKEN))
+    # Input the variable that will store the outputted data
+    c.setopt(c.WRITEDATA, buffer)
+    # Perform the cURL request
+    c.perform()
+
+    # Convert the BytesIO value to a string
+    response = buffer.getvalue().decode('utf8')
+
+    # Store the xml, in string format, as an ElementTree
+    elem = ET.fromstring(response)
+
+    # Retreive the author and title from the ElementTree
+    pages = elem.find('book').find('num_pages').text
+    title = elem.find('book').find('title').text
+
+    c.reset()
+    c.setopt(c.SSL_VERIFYPEER, 0)
+
+    return (title, pages)
+
+
+# Get the book's publication year
+def pub_year(book):
+    if book is None:
+        return None
+    elif not book:
+        return ""
+    else:
+        book_title = book.strip().replace(" ", "+")
+
+    buffer = BytesIO()
+
+    # Input the URL for the cURL request
+    c.setopt(c.URL, book_url.format(book_title, GOODREADS_TOKEN))
+    # Input the variable that will store the outputted data
+    c.setopt(c.WRITEDATA, buffer)
+    # Perform the cURL request
+    c.perform()
+
+    # Convert the BytesIO value to a string
+    response = buffer.getvalue().decode('utf8')
+
+    # Store the xml, in string format, as an ElementTree
+    elem = ET.fromstring(response)
+
+    # Retreive the author and title from the ElementTree
+    year = elem.find('book').find('work').find('original_publication_year').text
+    title = elem.find('book').find('title').text
+
+    c.reset()
+    c.setopt(c.SSL_VERIFYPEER, 0)
+
+    return (title, year)
+
+
+# Get the book's user ratings
+def ratings(book):
+    if book is None:
+        return None
+    elif not book:
+        return ""
+    else:
+        book_title = book.strip().replace(" ", "+")
+
+    buffer = BytesIO()
+
+    # Input the URL for the cURL request
+    c.setopt(c.URL, book_url.format(book_title, GOODREADS_TOKEN))
+    # Input the variable that will store the outputted data
+    c.setopt(c.WRITEDATA, buffer)
+    # Perform the cURL request
+    c.perform()
+
+    # Convert the BytesIO value to a string
+    response = buffer.getvalue().decode('utf8')
+
+    # Store the xml, in string format, as an ElementTree
+    elem = ET.fromstring(response)
+
+    # Retreive the author and title from the ElementTree
+    num_ratings = elem.find('book').find('work').find('ratings_count').text
+    rating = elem.find('book').find('average_rating').text
+    title = elem.find('book').find('title').text
+
+    c.reset()
+    c.setopt(c.SSL_VERIFYPEER, 0)
+
+    return (title, num_ratings, rating)
 
 
 '''Discord Functionality'''
@@ -92,7 +238,7 @@ async def on_command_error(ctx, err):
     elif isinstance(err, commands.NoPrivateMessage):
         return await ctx.send('Cannot grant your request. \'{}\' does not work in private messages.'.format(ctx.command.name))
     elif isinstance(err, commands.CommandNotFound):
-        return await ctx.send('Cannot grant your request. The command, \'{}\', does not exist.'.format(ctx.command.name))
+        return await ctx.send('Cannot grant your request. The command you entered does not exist.')
     elif isinstance(err, commands.DisabledCommand):
         return await ctx.send('Cannot grant your request. The command, \'{}\', has been disabled.'.format(ctx.command.name))
     elif isinstance(err, commands.CommandInvokeError):
@@ -222,6 +368,51 @@ async def get_author(ctx, book):
     book_author = author(book)
 
     await ctx.send('The author of \"{}\" is {}'.format(book_author[0], book_author[1]))
+
+# '!get_description' command
+@bot.command(name='get_description', help='Get description of a specified book')
+async def get_description(ctx, book):
+    book_description = description(book)
+
+    await ctx.send('Description of \"{}\":\n{}'.format(book_description[0], book_description[1]))
+
+
+# '!get_page_count' command
+@bot.command(name='get_page_count', help='Get the page count of a specified book')
+async def get_page_count(ctx, book):
+    pages = page_count(book)
+
+    await ctx.send('\"{}\" has {} pages'.format(pages[0], pages[1]))
+
+
+# '!get_pub_year' command
+@bot.command(name='get_pub_year', help='Get the publication year of a specified book')
+async def get_page_count(ctx, book):
+    pub = pub_year(book)
+
+    await ctx.send('\"{}\" was published in {}'.format(pub[0], pub[1]))
+
+
+# '!get_rating' command
+@bot.command(name='get_rating', help='Get the reader ratings of a specified book')
+async def get_rating(ctx, book):
+    book_ratings = ratings(book)
+
+    await ctx.send('Out of {} people, \"{}\" received an average rating of {}'.format(book_ratings[1], book_ratings[0], book_ratings[2]))
+
+# '!get_all' command
+@bot.command(name='get_all', help='Get all data of a specified book')
+async def get_all(ctx, book):
+    book_author = author(book)
+    book_description = description(book)
+    pages = page_count(book)
+    pub = pub_year(book)
+    book_ratings = ratings(book)
+    data_string = "Title: {}\nAuthor: {}\nDescription: {}\nPage Count: {}\nPublication Year: {}\nAverage Book Rating: {}\nNumber of Ratings: {}" \
+        .format(book_author[0], book_author[1], book_description[1], pages[1], pub[1], book_ratings[2], book_ratings[1])
+
+    await ctx.send(data_string)
+
 
 # Run the Client
 bot.run(DISCORD_TOKEN)
